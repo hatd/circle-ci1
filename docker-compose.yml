@@ -1,0 +1,31 @@
+version: '3'
+services:
+  db:
+    image: mysql:5.7.33
+    env_file:
+      - .env
+    environment:
+      - MYSQL_PASSWORD=${DATABASE_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - internal
+  web:
+    image: hatd/circle-ci:2.0
+    env_file:
+      - .env
+    volumes:
+      - .:/myapp
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    networks:
+      - internal
+    tty: true
+    stdin_open: true
+volumes:
+  mysql_data:
+networks:
+  internal:
+    driver: bridge
