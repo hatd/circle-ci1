@@ -4,8 +4,6 @@ services:
     image: mysql:5.7.33
     env_file:
       - .env
-    environment:
-      - MYSQL_PASSWORD=${DATABASE_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     networks:

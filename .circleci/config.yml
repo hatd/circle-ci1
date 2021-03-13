@@ -1,0 +1,63 @@
+version: 2.1
+# orbs:
+#   ruby: circleci/ruby@0.1.2
+references:
+  ruby_envs: &ruby_envs
+    environment:
+      BUNDLE_PATH: vendor/bundle
+      DATABASE_HOSTNAME: 127.0.0.1
+      DATABASE_USERNAME: root
+      DATABASE_PASSWORD: password
+      BUNDLER_VERSION: 2.1.4
+      RAILS_ENV: test
+  mysql_envs: &mysql_envs
+    environment:
+      DATABASE_USERNAME: root
+      DATABASE_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+jobs:
+  test_rspec:
+    docker:
+      - image: hatd/circle-ci:2.1
+        <<: *ruby_envs
+      - image: mysql:5.7.33
+        <<: *mysql_envs
+    steps:
+      - checkout
+      # Check DB status
+      # - run:
+      #     name: Wait for DB
+      #     command: scripts/wait-for-it.sh db:3306 --timeout=300 -- echo 'Mysql service is ready!'
+          # command: ls
+      - run:
+          name: Which bundler?
+          command: bundle -v
+      - restore_cache:
+          keys:
+            - circle-ci-bundler-{{ checksum "Gemfile.lock" }}
+            - circle-ci-bundler-
+      - run:
+          name: Bundle Install
+          command: bundle check --path $BUNDLE_PATH || bundle install --jobs=4 --retry=3 --path $BUNDLE_PATH
+      # - save_cache:
+      #     key: circle-ci-bundler-{{ checksum "Gemfile.lock" }}
+      #     paths:
+      #       - $BUNDLE_PATH
+      - run:
+          name: Database setup
+          command: RAILS_ENV=test rails db:drop db:create db:schema:load
+      - run:
+          name: Run Migrate
+          command: bin/rake db:migrate RAILS_ENV=test
+      # - run:
+      #     name: Init webpacker
+      #     command: |
+      #       yarn add @rails/webpacker
+      - run:
+          name: Rspec test
+          command: rspec spec/
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+    - test_rspec
